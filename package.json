@@ -1,0 +1,22 @@
+{
+  "name": "webxr-template",
+  "version": "0.0.2",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && esbuild src/index.ts --format=esm --bundle --minify --sourcemap --target=es2020 --outfile=./gen/bundle.js",
+    "test": "tsc && node ./src/tests.js",
+    "watch": "tsc && esbuild src/index.ts --format=esm --bundle --sourcemap --target=es2020 --outfile=./www/gen/bundle.js --servedir=www"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babylonjs/core": "^6.10.0",
+    "@babylonjs/materials": "^6.10.0",
+    "esbuild": "^0.18.10",
+    "typescript": "^5.1.6"
+  },
+  "devDependencies": {
+    "@babylonjs/inspector": "^6.10.0"
+  }
+}
