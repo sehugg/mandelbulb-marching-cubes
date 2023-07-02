@@ -49,13 +49,29 @@ export class Main {
         camera.attachControl(canvas, true);
 
         var hemLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(-1, 1, -1), scene);
+        hemLight.intensity = 0.2;
+        hemLight.groundColor = new BABYLON.Color3(0.7, 0.5, 0.3);
         var dirLight = new BABYLON.DirectionalLight("dir", hemLight.direction.multiplyByFloats(1, -1, 1), scene);
-        hemLight.intensity = 0.3;
         dirLight.intensity = 0.5;
+        dirLight.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
+        // create a point light with limited range
+        var pointLight = new BABYLON.PointLight("point", new BABYLON.Vector3(0, 0, -80), scene);
+        pointLight.intensity = 0.5;
+        pointLight.diffuse = new BABYLON.Color3(0.5, 1, 0.5);
+        pointLight.range = 50;
 
+       /*
+        var dirLight1 = new BABYLON.DirectionalLight("dir1", new BABYLON.Vector3(1,1,1), scene);
+        dirLight1.intensity = 0.5;
+        dirLight1.diffuse = new BABYLON.Color3(0.2, 0.6, 1);
+        var dirLight2 = new BABYLON.DirectionalLight("dir2", new BABYLON.Vector3(-1,-1,-1), scene);
+        dirLight2.intensity = 0.5;
+        dirLight2.diffuse = new BABYLON.Color3(1, 0.2, 0.6);
+        */
 
         //just for a better look
-        var shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
+        //var shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
+        //Octant.shadowGenerator = shadowGenerator;
 
         var pipeline = new BABYLON.DefaultRenderingPipeline("default", false, scene, [camera]);
         pipeline.bloomEnabled = true;
