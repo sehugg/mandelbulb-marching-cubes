@@ -20,9 +20,10 @@ var persistence = 0.55;
 var warpAmplitude = 10;
 var warpFrequency = 0.01;
 //var terraceHeight = 0;
+var densityThreshold = -0.005;
 
-var smoothShaded = false;
-var smoothTerrain = true;
+var smoothShaded = true;
+var smoothTerrain = false;
 
 //the chunk class
 export class Chunk {
@@ -80,10 +81,17 @@ export class Chunk {
                 for (var z = w; z--;) {
                     //im storing values in a dictionary type array because it will prevent a lot of for loops in the future
                     let density = this.world.getDensity(this.x + (x * cs), this.y + (y * cs), this.z + (z * cs));
+                    /*
+                    density += this.world.getDensity(this.x + ((x+0.5) * cs), this.y + (y * cs), this.z + (z * cs));
+                    density += this.world.getDensity(this.x + (x * cs), this.y + ((y+0.5) * cs), this.z + (z * cs));
+                    density += this.world.getDensity(this.x + (x * cs), this.y + (y * cs), this.z + ((z+0.5) * cs));
+                    density *= 0.25;
+                    */
                     this.chunk[x][y][z] = density;
                 }
             }
         }
+        // TODO: figure out if empty at this point, maybe only test edges
 
         //this builds and can rebuild the mesh anytime
         this.createMeshData();
@@ -95,9 +103,10 @@ export class Chunk {
         }
         
         var mat = new BABYLON.StandardMaterial("mat", scene);
-        mat.backFaceCulling = false;
+        mat.backFaceCulling = true;
     
-        let mesh = new BABYLON.Mesh("custom", scene);
+        let key = this.x + " " + this.y + " " + this.z + " " + this.chunkWidth;
+        let mesh = new BABYLON.Mesh(key, scene);
         mesh.material = mat;
     
         var vertexData = new BABYLON.VertexData();
@@ -106,12 +115,19 @@ export class Chunk {
         vertexData.normals = this.normals;
         vertexData.applyToMesh(mesh, true);
 
-        //this just sets the mesh position to its right place
+        //this just sets the mesh position to its right place        
+        /*
         mesh.position = new BABYLON.Vector3(
-            (this.x + this.chunkWidth / 2) * chunkSizeMultiplier,
-            (this.y + this.chunkWidth / 2) * chunkSizeMultiplier,
-            (this.z + this.chunkWidth / 2) * chunkSizeMultiplier
+            (this.x + this.chunkWidth / 4) * chunkSizeMultiplier,
+            (this.y + this.chunkWidth / 4) * chunkSizeMultiplier,
+            (this.z + this.chunkWidth / 4) * chunkSizeMultiplier
         );
+        */
+        mesh.position = new BABYLON.Vector3(this.x, this.y, this.z);
+        if (smoothShaded) {
+            mesh.optimizeIndices();
+        }
+        
         return mesh;
     }
 
@@ -119,6 +135,8 @@ export class Chunk {
     createMeshData() {
         var cs = this.cellSize * chunkSizeMultiplier;
         var w = this.cellNumber;
+        const thresh = densityThreshold * cs;
+        //console.log(cs, thresh);
 
         for (var z = w; z--;) {
             for (var y = w; y--;) {
@@ -137,7 +155,7 @@ export class Chunk {
                         // if the value is greater than zero then there is mesh data contained in that cell
                         // so it transforms corners to binary data to get the mesh configuration
                         // which is basically just filling up remaining zeros
-                        if (cube[i] >= 0) {
+                        if (cube[i] >= densityThreshold) {
                             config |= 1 << i;
                         }
                     }
@@ -146,6 +164,7 @@ export class Chunk {
                 }
             }
         }
+        console.log('verts', this.vertices.length, 'edges', this.indices.length, 'tris', this.triangles.length);
     }
 
     //flat normals
@@ -175,6 +194,17 @@ export class Chunk {
         var dy = v - this.chunk[x][y + 1][z];
         var dz = v - this.chunk[x][y][z + 1];
 
+        var n = BABYLON.Vector3.Normalize(new BABYLON.Vector3(dx, dy, dz));
+        this.normals.push(n.x);
+        this.normals.push(n.y);
+        this.normals.push(n.z);
+    }
+
+    computeCubeNormals(cube: number[]) {
+        // compute normal from densities of 8 corners of cube
+        var dx = cube[0] - cube[1] + cube[2] - cube[3] + cube[4] - cube[5] + cube[6] - cube[7];
+        var dy = cube[0] - cube[1] - cube[2] + cube[3] + cube[4] - cube[5] - cube[6] + cube[7];
+        var dz = cube[0] + cube[1] + cube[2] + cube[3] - cube[4] - cube[5] - cube[6] - cube[7];
         var n = BABYLON.Vector3.Normalize(new BABYLON.Vector3(dx, dy, dz));
         this.normals.push(n.x);
         this.normals.push(n.y);
@@ -234,7 +264,8 @@ export class Chunk {
                         this.vertices.push(vertPos.x);
                         this.vertices.push(vertPos.y);
                         this.vertices.push(vertPos.z);
-                        this.computeSmoothNormals(x, y, z);
+                        //this.computeSmoothNormals(x, y, z);
+                        this.computeCubeNormals(cube);
 
                         this.indices.push((this.vertices.length / 3) - 1);
                         this.triangles.push(this.vertices.length - 1);
@@ -270,7 +301,6 @@ export class Chunk {
                 this.computeFlatNormals(v1, v2, v3);
             }
         }
-        console.log('verts', this.vertices.length, 'edges', this.indices.length, 'tris', this.triangles.length);
     }
 }
 

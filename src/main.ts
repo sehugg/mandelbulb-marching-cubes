@@ -1,12 +1,14 @@
 
 
-var debug = true;
-//import { Inspector } from '@babylonjs/inspector';
+import { Inspector } from '@babylonjs/inspector';
 import * as BABYLON from "@babylonjs/core";
 // import STL loader
 import "@babylonjs/loaders";
 import { Chunk } from "./chunk";
 import { Mandelbulb } from "./mandel";
+import { Octant } from "./octant";
+
+var debug = false;
 
 var timeStep = 1 / 60; //TODO?
 
@@ -39,7 +41,7 @@ export class Main {
         });
 
         // ... YOUR SCENE CREATION
-        //if (debug) Inspector.Show(scene, {});
+        if (debug) Inspector.Show(scene, {});
 
         var seed = '16353fgdeb';
 
@@ -48,8 +50,8 @@ export class Main {
 
         var hemLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(-1, 1, -1), scene);
         var dirLight = new BABYLON.DirectionalLight("dir", hemLight.direction.multiplyByFloats(1, -1, 1), scene);
-        hemLight.intensity = 0.1;
-        dirLight.intensity = 0.7;
+        hemLight.intensity = 0.3;
+        dirLight.intensity = 0.5;
 
 
         //just for a better look
@@ -62,8 +64,20 @@ export class Main {
         pipeline.bloomKernel = 64;
         pipeline.bloomScale = 0.5;
 
-        scene.registerBeforeRender(function () {
-            startChunks();
+        var world = new Mandelbulb();
+
+        var rootOctant = new Octant(world, null, 0, 64);
+        (async () => {
+            await rootOctant.build(scene);
+            /*
+            for (let i=0; i<8; i++) {
+                await rootOctant.createChild(scene, i);
+            }
+            */
+        })();
+
+        scene.registerBeforeRender(async () => {
+            //startChunks();
         });
 
 
@@ -73,7 +87,6 @@ export class Main {
 
         //the algorithm starts here
         //var perlin = new SimplexNoise(seed);
-        var world = new Mandelbulb();
         var chunks : {[key:string]:Chunk} = {};
         var chunkWidth = 16;
 

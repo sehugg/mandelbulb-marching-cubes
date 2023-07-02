@@ -1,10 +1,13 @@
 import { WorldShape } from "./chunk";
 
+// http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
+
 export class Mandelbulb implements WorldShape {
     maxIterations = 50;
     getDensity(x: number, y: number, z: number) {
         let s = 1 / 50;
-        return 1 - mandelbulb(x * s, y * s, z * s, this.maxIterations);
+        //let dist = x*x + y*y + z*z; return 1 - dist / 500;
+        return -mandelbulb(x * s, y * s, z * s, this.maxIterations);
     }
 }
 
@@ -14,6 +17,7 @@ function mandelbulb(x: number, y: number, z: number, maxIterations: number) {
     var origZ = z;
     var dr = 1.0;
     var r = 0.0;
+    var power = 8.0;
     for (var i = 0; i < maxIterations; i++) {
         r = Math.sqrt(x * x + y * y + z * z);
         if (r > 2.0) break;
@@ -22,19 +26,19 @@ function mandelbulb(x: number, y: number, z: number, maxIterations: number) {
         var theta = Math.acos(z / r);
         var phi = Math.atan2(y, x);
 
-        dr = Math.pow(r, 7.0) * 8.0 * dr + 1.0;
+        dr = Math.pow(r, power - 1) * power * dr + 1.0;
 
         // scale and rotate the point
-        var zr = Math.pow(r, 8.0);
-        theta = theta * 8.0;
-        phi = phi * 8.0;
+        var zr = Math.pow(r, power);
+        theta = theta * power;
+        phi = phi * power;
 
         // convert back to cartesian coordinates
         x = zr * Math.sin(theta) * Math.cos(phi) + origX;
         y = zr * Math.sin(theta) * Math.sin(phi) + origY;
         z = zr * Math.cos(theta) + origZ;
     }
-    return r;
+    return 0.5 * Math.log(r) * r / dr;
 }
 
 
