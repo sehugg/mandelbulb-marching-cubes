@@ -9,6 +9,8 @@ const minDistance = 0.01;
 
 
 export class Octant {
+    static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
+
     level: number;
     children: Octant[] = [];
     x: number;
@@ -17,7 +19,7 @@ export class Octant {
     chunk: Chunk;
     mesh: BABYLON.Mesh | null = null;
     childGroup: BABYLON.Mesh | null = null;
-    static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
+    lights: BABYLON.Light[] = [];
 
     constructor(
         readonly world: WorldShape,
@@ -42,8 +44,11 @@ export class Octant {
         console.log("building octant at " + this.x + " " + this.y + " " + this.z);
         this.chunk.create();
         let mesh = this.mesh = this.chunk.buildMesh(scene);
-        if (!mesh) return;
-
+        if (!mesh) {
+            return false;
+        }
+        // TODO? this.addLights(mesh);
+        console.log("built octant at " + this.x + " " + this.y + " " + this.z);
         if (Octant.shadowGenerator) {
             if (this.level <= 3) {
                 Octant.shadowGenerator.addShadowCaster(mesh);
@@ -51,8 +56,7 @@ export class Octant {
             mesh.receiveShadows = true;
         }
         mesh.occlusionType = BABYLON.AbstractMesh.OCCLUSION_TYPE_OPTIMISTIC;
-        console.log("built octant at " + this.x + " " + this.y + " " + this.z);
-        let mesh2 = mesh.clone(mesh.name + ' clone');
+        let mesh2 = mesh.clone(mesh.name + ' clone'); // for LOD detection
         let subdivided = false;
         mesh.useLODScreenCoverage = true;
         mesh.addLODLevel(maxDistance, mesh2);
@@ -68,6 +72,32 @@ export class Octant {
                 this.undivide(scene);
             }
         }
+        return true;
+    }
+    addLights(mesh: BABYLON.Mesh) {
+        for (let light of this.lights) {
+            light.includedOnlyMeshes.push(mesh);
+        }
+        if (this.parent) {
+            this.parent.addLights(mesh);
+        }
+    }
+    async placeLight(scene: BABYLON.Scene) {
+        // place a visible light
+        var r = Math.random();
+        var g = Math.random();
+        var b = 1 - r;
+        let light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(this.x, this.y, this.z), scene);
+        this.parent?.lights.push(light);
+        light.diffuse = new BABYLON.Color3(r, g, b);
+        light.range = 100 / this.level;
+        light.falloffType = BABYLON.Light.FALLOFF_GLTF;
+        // place a sphere
+        let sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 1}, scene);
+        sphere.position = new BABYLON.Vector3(this.x, this.y, this.z);
+        let mat = new BABYLON.StandardMaterial("sphereMat", scene);
+        mat.emissiveColor = new BABYLON.Color3(r, g, b);
+        sphere.material = mat;
     }
     createChildGroup(scene: BABYLON.Scene) {
         if (this.mesh && this.childGroup == null) {
@@ -84,17 +114,19 @@ export class Octant {
     async createChild(scene: BABYLON.Scene, index: number) {
         let child = new Octant(this.world, this, index, this.radius / 2);
         this.children[index] = child;
-        await child.build(scene);
-        if (child.mesh) {
-            //this.createChildGroup(scene)?.addChild(child.mesh);
-        }
-        return child;
+        return await child.build(scene);
     }
     async subdivide(scene: BABYLON.Scene) {
         if (this.children.length == 0) {
             console.log("subdividing octant at " + this.x + " " + this.y + " " + this.z);
+            let empty = [];
             for (let i=0; i<8; i++) {
-                await this.createChild(scene, i);
+                let success = await this.createChild(scene, i);
+                if (!success) empty.push(this.children[i]);
+            }
+            console.log("empty children: " + empty.length);
+            if (empty.length == 1) {
+                await empty[0].placeLight(scene);
             }
         } else {
             // show children 

@@ -34,7 +34,6 @@ export class Chunk {
     cellNumber;
     cellSize;
     cutOff;
-    visible;
     chunk: number[][][];
     triangles: number[];
     vertices: number[];
@@ -55,7 +54,6 @@ export class Chunk {
         this.cellSize = chunkWidth / this.cellNumber;
 
         this.cutOff = 0;
-        this.visible = false;
 
         this.chunk = [];
 
