@@ -5,8 +5,8 @@ import { Chunk, WorldShape } from "./chunk";
 // can we make a surface shader with a few iterations?
 
 const maxDistance = 0.1;
-const minDistance = 0.01;
-
+const minDistance = 0.02;
+const maxLevel = 7;
 
 export class Octant {
     static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
@@ -41,14 +41,14 @@ export class Octant {
         this.chunk = new Chunk(this.x-radius, this.y-radius, this.z-radius, resolution, chunkWidth, world);
     }
     async build(scene: BABYLON.Scene) {
-        console.log("building octant at " + this.x + " " + this.y + " " + this.z);
+        console.log("building octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
         this.chunk.create();
         let mesh = this.mesh = this.chunk.buildMesh(scene);
         if (!mesh) {
             return false;
         }
         // TODO? this.addLights(mesh);
-        console.log("built octant at " + this.x + " " + this.y + " " + this.z);
+        console.log("built octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
         if (Octant.shadowGenerator) {
             if (this.level <= 3) {
                 Octant.shadowGenerator.addShadowCaster(mesh);
@@ -56,6 +56,12 @@ export class Octant {
             mesh.receiveShadows = true;
         }
         mesh.occlusionType = BABYLON.AbstractMesh.OCCLUSION_TYPE_OPTIMISTIC;
+        if (this.level < maxLevel) {
+            this.setupLODDetection(scene, mesh);
+        }
+        return true;
+    }
+    setupLODDetection(scene: BABYLON.Scene, mesh: BABYLON.Mesh) {
         let mesh2 = mesh.clone(mesh.name + ' clone'); // for LOD detection
         let subdivided = false;
         mesh.useLODScreenCoverage = true;
@@ -72,7 +78,6 @@ export class Octant {
                 this.undivide(scene);
             }
         }
-        return true;
     }
     addLights(mesh: BABYLON.Mesh) {
         for (let light of this.lights) {

@@ -12,13 +12,6 @@ var chunkSizeMultiplier = 1; //size multiplier of the total chunk
 the resolution goes like 16, 8, 4, 2, 1, 0.5, 0.25 etc...
 with increasing resolution and chunkWidth as the minimum res, use for lODs*/
 
-var octaves = 8;
-var amplitude = 200;
-var frequency = 0.009;
-var roughness = 2;
-var persistence = 0.55;
-var warpAmplitude = 10;
-var warpFrequency = 0.01;
 //var terraceHeight = 0;
 var densityThreshold = -0.005;
 
