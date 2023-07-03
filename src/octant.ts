@@ -7,6 +7,11 @@ import { Chunk, WorldShape } from "./chunk";
 const maxDistance = 0.1;
 const minDistance = 0.02;
 const maxLevel = 7;
+const landingLevel = 5;
+const minLandingVerts = 50;
+const maxLandingVariance = 0.2;
+const maxLandingAngle = 0.2;
+const lightSurfaceDistance = 10;
 
 export class Octant {
     static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
@@ -59,6 +64,12 @@ export class Octant {
         if (this.level < maxLevel) {
             this.setupLODDetection(scene, mesh);
         }
+        if (this.level == landingLevel && this.chunk.vertices.length > minLandingVerts) {
+            let meta = this.chunk.computeNormalMeanStddev();
+            if (meta.varmag < maxLandingVariance && meta.angle < maxLandingAngle) {
+                await this.placeLight(scene, meta.meanpos);
+            }
+        }
         return true;
     }
     setupLODDetection(scene: BABYLON.Scene, mesh: BABYLON.Mesh) {
@@ -87,22 +98,36 @@ export class Octant {
             this.parent.addLights(mesh);
         }
     }
-    async placeLight(scene: BABYLON.Scene) {
-        // place a visible light
+    async placeLight(scene: BABYLON.Scene, cenpos: BABYLON.Vector3) {
+        // get light color
         var r = Math.random();
         var g = Math.random();
         var b = 1 - r;
-        let light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(this.x, this.y, this.z), scene);
+        let mat = new BABYLON.StandardMaterial("sphereMat", scene);
+        mat.emissiveColor = new BABYLON.Color3(r, g, b);
+        // get offset 
+        let poffset = new BABYLON.Vector3(this.x, this.y, this.z).normalize();
+        cenpos.addInPlace(poffset.scale(lightSurfaceDistance));
+        // place a visible light
+        let light = new BABYLON.PointLight("pointLight", cenpos, scene);
         this.parent?.lights.push(light);
         light.diffuse = new BABYLON.Color3(r, g, b);
-        light.range = 100 / this.level;
+        light.range = lightSurfaceDistance * 1.5;
         light.falloffType = BABYLON.Light.FALLOFF_GLTF;
         // place a sphere
         let sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 1}, scene);
-        sphere.position = new BABYLON.Vector3(this.x, this.y, this.z);
-        let mat = new BABYLON.StandardMaterial("sphereMat", scene);
-        mat.emissiveColor = new BABYLON.Color3(r, g, b);
+        sphere.position = cenpos;
         sphere.material = mat;
+        // create tiny points on each vertex of the chunk
+        if (this.mesh) {
+            poffset.scaleInPlace(0.1);
+            let positions = this.chunk.vertices;
+            for (let i=0; i<positions.length; i+=3*6) {
+                let point = BABYLON.MeshBuilder.CreateBox("point", {size: 0.1}, scene);
+                point.position = new BABYLON.Vector3(positions[i], positions[i+1], positions[i+2]).add(this.mesh.position).add(poffset);
+                point.material = mat;
+            }
+        }
     }
     createChildGroup(scene: BABYLON.Scene) {
         if (this.mesh && this.childGroup == null) {
@@ -131,7 +156,7 @@ export class Octant {
             }
             console.log("empty children: " + empty.length);
             if (empty.length == 1) {
-                await empty[0].placeLight(scene);
+                //await empty[0].placeLight(scene);
             }
         } else {
             // show children 

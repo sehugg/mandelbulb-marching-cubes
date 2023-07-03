@@ -27,6 +27,8 @@ export class Main {
         const canvas = document.getElementById("maincanvas") as HTMLCanvasElement; // Get the canvas element
         const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
         const scene = this.scene = new BABYLON.Scene(engine);
+        // set background to black
+        scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
 
         // Register a render loop to repeatedly render the scene
         engine.runRenderLoop(() => {
@@ -43,19 +45,20 @@ export class Main {
         // ... YOUR SCENE CREATION
         if (debug) Inspector.Show(scene, {});
 
-        var seed = '16353fgdeb';
-
         var camera = new BABYLON.ArcRotateCamera("arcCam", BABYLON.Tools.ToRadians(45), BABYLON.Tools.ToRadians(45), 200.0, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
 
         var hemLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(-1, 1, -1), scene);
         hemLight.intensity = 0.2;
-        hemLight.groundColor = new BABYLON.Color3(0.7, 0.5, 0.3);
+        hemLight.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
+        hemLight.groundColor = new BABYLON.Color3(0.2, 0.1, 0.05);
+
         /*
-        var dirLight = new BABYLON.DirectionalLight("dir", hemLight.direction.multiplyByFloats(1, -1, 1), scene);
+        var dirLight = new BABYLON.DirectionalLight("dir", new BABYLON.Vector3(1,-1,1), scene);
         dirLight.intensity = 0.5;
         dirLight.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
         */
+        
        /*
         var dirLight1 = new BABYLON.DirectionalLight("dir1", new BABYLON.Vector3(1,1,1), scene);
         dirLight1.intensity = 0.5;
@@ -79,58 +82,10 @@ export class Main {
         var world = new Mandelbulb();
 
         var rootOctant = new Octant(world, null, 0, 64);
+        // build first octant
         (async () => {
             await rootOctant.build(scene);
-            /*
-            for (let i=0; i<8; i++) {
-                await rootOctant.createChild(scene, i);
-            }
-            */
         })();
-
-        scene.registerBeforeRender(async () => {
-            //startChunks();
-        });
-
-
-        var roomWidth = 10;
-        var roomHeight = 5;
-        var roomDepth = 10; //the units is in chunks
-
-        //the algorithm starts here
-        //var perlin = new SimplexNoise(seed);
-        var chunks : {[key:string]:Chunk} = {};
-        var chunkWidth = 16;
-
-        /*a very inefficient alternative to multithreading
-        please do not use this method in your final project
-        research on web workers for multithreading
-        this is just for testing, it generates one chunk per frame*/
-        var xx = 0, yy = 0, zz = 0;
-        function startChunks() {
-            if (xx < roomWidth && yy < roomHeight && zz < roomDepth) {
-                let x = (xx * chunkWidth) - (roomWidth / 2) * chunkWidth;
-                let y = (yy * chunkWidth) - (roomHeight / 2) * chunkWidth;
-                let z = (zz * chunkWidth) - (roomDepth / 2) * chunkWidth;
-                console.log("generating chunk at " + x + " " + y + " " + z);
-                let chunk = new Chunk(x,y,z,1,16,world);
-                chunk.create();
-                chunk.buildMesh(scene);
-                chunks[xx + " " + yy + " " + zz] = chunk;
-
-                zz++
-                if (zz == roomDepth) {
-                    zz = 0;
-                    yy++;
-                    if (yy == roomHeight) {
-                        yy = 0;
-                        xx++;
-                    }
-                }
-            }
-        }
-        //
-
     }
 
     update() {

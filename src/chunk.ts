@@ -202,6 +202,53 @@ export class Chunk {
         this.normals.push(n.z);
     }
 
+    computeNormalMeanStddev() {
+        // compute mean and stddev of normals
+        let meannml = new BABYLON.Vector3(0, 0, 0);
+        let meanpos = new BABYLON.Vector3(0, 0, 0);
+        for (let i=0; i<this.normals.length; i+=12) {
+            let x = this.normals[i];
+            let y = this.normals[i+1];
+            let z = this.normals[i+2];
+            meannml.addInPlaceFromFloats(x, y, z);
+        }
+        meannml.normalize();
+        // compute variance
+        let variance = new BABYLON.Vector3(0, 0, 0);
+        let n = 0;
+        for (let i=3; i<this.normals.length; i+=12) {
+            let x = this.normals[i];
+            let y = this.normals[i+1];
+            let z = this.normals[i+2];
+            variance.addInPlaceFromFloats(
+                (x - meannml.x) * (x - meannml.x),
+                (y - meannml.y) * (y - meannml.y),
+                (z - meannml.z) * (z - meannml.z)
+            );
+            n++;
+        }
+        variance.scaleInPlace(1/n);
+        // compute average of points
+        n = 0;
+        for (let i=0; i<this.vertices.length; i+=12) {
+            let x = this.vertices[i];
+            let y = this.vertices[i+1];
+            let z = this.vertices[i+2];
+            meanpos.addInPlaceFromFloats(x, y, z);
+            n++;
+        }
+        meanpos.scaleInPlace(1/n);
+        meanpos.addInPlaceFromFloats(this.x, this.y, this.z);
+        // compute dot product of mean and centroid
+        let centroid = new BABYLON.Vector3(this.x + this.chunkWidth/2, this.y + this.chunkWidth/2, this.z + this.chunkWidth/2);
+        centroid.normalize();
+        let dot = centroid.x * meannml.x + centroid.y * meannml.y + centroid.z * meannml.z;
+        let angle = Math.acos(dot);
+        let varmag = variance.length();
+        console.log('variance', varmag, 'angle', angle);
+        return { varmag, angle, meanpos };
+    }
+
     //marches the cube
     marchCube(x: number, y: number, z: number, size: number, cube: number[], config: number) {
         //if the config is outside the 0 or 255 which are both -1 it should return
