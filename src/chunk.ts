@@ -205,6 +205,22 @@ export class Chunk {
         this.normals.push(n.z);
     }
 
+    computeExactNormals(pos: BABYLON.Vector3) {
+        let x = this.x + pos.x;
+        let y = this.y + pos.y;
+        let z = this.z + pos.z;
+        let cs = this.cellSize / 2;
+        // get density at 4 points
+        let d0 = this.world.getDensity(x, y, z); // TODO: can cache?
+        let dx = d0 - this.world.getDensity(x + cs, y, z);
+        let dy = d0 - this.world.getDensity(x, y + cs, z);
+        let dz = d0 - this.world.getDensity(x, y, z + cs);
+        let n = BABYLON.Vector3.Normalize(new BABYLON.Vector3(dx, dy, dz));
+        this.normals.push(n.x);
+        this.normals.push(n.y);
+        this.normals.push(n.z);
+    }
+
     computeNormalMeanStddev() {
         // compute mean and stddev of normals
         let meannml = new BABYLON.Vector3(0, 0, 0);
@@ -314,7 +330,8 @@ export class Chunk {
                         this.vertices.push(vertPos.y);
                         this.vertices.push(vertPos.z);
                         //this.computeSmoothNormals(x, y, z);
-                        this.computeCubeNormals(cube);
+                        //this.computeCubeNormals(cube);
+                        this.computeExactNormals(vertPos);
 
                         this.indices.push((this.vertices.length / 3) - 1);
                         this.triangles.push(this.vertices.length - 1);
