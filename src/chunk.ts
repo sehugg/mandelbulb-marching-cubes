@@ -7,16 +7,16 @@ export interface WorldShape {
 export type DensityFunc = (x: number, y: number, z: number) => number;
 
 //var chunkWidth = 16; //number of cells in a chunk
-var chunkSizeMultiplier = 1; //size multiplier of the total chunk 
+const chunkSizeMultiplier = 1; //size multiplier of the total chunk 
 /*var resolution = 1;/*tbh i could have done this better.
 the resolution goes like 16, 8, 4, 2, 1, 0.5, 0.25 etc...
 with increasing resolution and chunkWidth as the minimum res, use for lODs*/
 
 //var terraceHeight = 0;
-var densityThreshold = -0.005;
+const densityThreshold = -0.005;
 
-var smoothShaded = true;
-var smoothTerrain = false;
+const smoothShaded = true;
+const smoothTerrain = false;
 
 //the chunk class
 export class Chunk {
@@ -129,16 +129,19 @@ export class Chunk {
         const thresh = densityThreshold * cs;
         //console.log(cs, thresh);
 
+        var cube = [0,0,0,0,0,0,0,0];
         for (var z = w; z--;) {
             for (var y = w; y--;) {
                 for (var x = w; x--;) {
-                    var cube = [];
                     var config = 0;
 
                     //gets configuration for the 8 corners of a cube
                     for (var i = 0; i < 8; i++) {
-                        var corner = new BABYLON.Vector3(x, y, z).add(cornerTable[i]);
-                        cube[i] = this.chunk[corner.x][corner.y][corner.z];
+                        var c = cornerTable[i];
+                        var cx = x + c.x;
+                        var cy = y + c.y;
+                        var cz = z + c.z;
+                        cube[i] = this.chunk[cx][cy][cz];
 
                         //the actual magic behind the entire algorithm
                         // a left shift for corner configuration
@@ -257,6 +260,7 @@ export class Chunk {
         }
 
         var edgeIndex = 0;
+        const sizevec = new BABYLON.Vector3().setAll(size);
         for (var i = 0; i < 5; i++) {
             for (var p = 0; p < 3; p++) {
                 var ind = triangleTable[config][edgeIndex];
@@ -265,12 +269,16 @@ export class Chunk {
                 if (ind == -1) { return; }
 
                 //this gets the current corner its configuring
-                var vert1 = new BABYLON.Vector3(x, y, z).add(cornerTable[edgeIndexes[ind][0]]).multiply(new BABYLON.Vector3().setAll(size));
-                var vert2 = new BABYLON.Vector3(x, y, z).add(cornerTable[edgeIndexes[ind][1]]).multiply(new BABYLON.Vector3().setAll(size));
+                var vert0 = new BABYLON.Vector3(x, y, z);
+                let edge0 = edgeIndexes[ind][0];
+                let edge1 = edgeIndexes[ind][1];
+                var vert1 = vert0.add(cornerTable[edge0]);
+                var vert2 = vert0.add(cornerTable[edge1]);
+                vert1.multiplyInPlace(sizevec);
+                vert2.multiplyInPlace(sizevec);
+
                 var vertPos;
-
-
-                if (smoothTerrain == true) {
+                if (smoothTerrain) {
                     //smoother terrain
                     var vert1S = cube[edgeIndexes[ind][0]];
                     var vert2S = cube[edgeIndexes[ind][1]];
@@ -283,10 +291,13 @@ export class Chunk {
                     vertPos = vert1.add(vert2.subtract(vert1).multiply(new BABYLON.Vector3().setAll(diff)));
                 } else {
                     //rough (blocky) terrain
-                    vertPos = vert1.add(vert2).divide(new BABYLON.Vector3(2, 2, 2));
+                    vertPos = vert1.add(vert2);
+                    vertPos.x /= 2;
+                    vertPos.y /= 2;
+                    vertPos.z /= 2;
                 }
-
-                if (smoothShaded == false) {
+ 
+                if (!smoothShaded) {
                     //flat shaded
                     this.vertices.push(vertPos.x);
                     this.vertices.push(vertPos.y);
@@ -319,7 +330,7 @@ export class Chunk {
 
 
             //flat normals
-            if (smoothShaded == false) {
+            if (!smoothShaded) {
                 var v1 = new BABYLON.Vector3(
                     this.vertices[this.vertices.length - 3],
                     this.vertices[this.vertices.length - 2],

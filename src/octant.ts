@@ -4,10 +4,11 @@ import { Chunk, WorldShape } from "./chunk";
 // https://www.kevs3d.co.uk/dev/shaders/
 // can we make a surface shader with a few iterations?
 
-const maxDistance = 0.1;
+const gridPointsPerEdge = 8;
+const maxDistance = 0.1;    
 const minDistance = 0.02;
 const maxLevel = 7;
-const landingLevel = 5;
+const landingLevel = 6;
 const minLandingVerts = 50;
 const maxLandingVariance = 0.2;
 const maxLandingAngle = 0.2;
@@ -42,7 +43,7 @@ export class Octant {
             this.x = this.y = this.z = this.level = 0;
         }
         let chunkWidth = radius * 2;
-        let resolution = chunkWidth / 16;
+        let resolution = chunkWidth / gridPointsPerEdge;
         this.chunk = new Chunk(this.x-radius, this.y-radius, this.z-radius, resolution, chunkWidth, world);
     }
     async build(scene: BABYLON.Scene) {
