@@ -204,17 +204,18 @@ export class Chunk {
         this.normals.push(n.z);
     }
 
-    computeExactNormals(pos: BABYLON.Vector3) {
+    computeExactNormals(pos: BABYLON.Vector3, scale: number) {
         let x = this.x + pos.x;
         let y = this.y + pos.y;
         let z = this.z + pos.z;
-        let cs = this.cellSize / 2;
+        let cs = this.cellSize * scale;
         // get density at 4 points
         let d0 = this.world.getDensity(x, y, z); // TODO: can cache?
         let dx = d0 - this.world.getDensity(x + cs, y, z);
         let dy = d0 - this.world.getDensity(x, y + cs, z);
         let dz = d0 - this.world.getDensity(x, y, z + cs);
-        let n = BABYLON.Vector3.Normalize(new BABYLON.Vector3(dx, dy, dz));
+        let n = new BABYLON.Vector3(dx, dy, dz);
+        //n.scaleInPlace(1/scale);
         this.normals.push(n.x);
         this.normals.push(n.y);
         this.normals.push(n.z);
@@ -222,9 +223,10 @@ export class Chunk {
 
     computeNormalMeanStddev() {
         // compute mean and stddev of normals
+        let tmp = new BABYLON.Vector3(0, 0, 0);
         let meannml = new BABYLON.Vector3(0, 0, 0);
         let meanpos = new BABYLON.Vector3(0, 0, 0);
-        for (let i=0; i<this.normals.length; i+=12) {
+        for (let i=0; i<this.normals.length; i+=3*5) {
             let x = this.normals[i];
             let y = this.normals[i+1];
             let z = this.normals[i+2];
@@ -234,21 +236,23 @@ export class Chunk {
         // compute variance
         let variance = new BABYLON.Vector3(0, 0, 0);
         let n = 0;
-        for (let i=3; i<this.normals.length; i+=12) {
+        for (let i=3; i<this.normals.length; i+=3*6) {
             let x = this.normals[i];
             let y = this.normals[i+1];
             let z = this.normals[i+2];
+            tmp.copyFromFloats(x, y, z);
+            tmp.normalize();
             variance.addInPlaceFromFloats(
-                (x - meannml.x) * (x - meannml.x),
-                (y - meannml.y) * (y - meannml.y),
-                (z - meannml.z) * (z - meannml.z)
+                (tmp.x - meannml.x) * (tmp.x - meannml.x),
+                (tmp.y - meannml.y) * (tmp.y - meannml.y),
+                (tmp.z - meannml.z) * (tmp.z - meannml.z)
             );
             n++;
         }
         variance.scaleInPlace(1/n);
         // compute average of points
         n = 0;
-        for (let i=0; i<this.vertices.length; i+=12) {
+        for (let i=0; i<this.vertices.length; i+=3*5) {
             let x = this.vertices[i];
             let y = this.vertices[i+1];
             let z = this.vertices[i+2];
@@ -267,8 +271,9 @@ export class Chunk {
         return { varmag, angle, meanpos };
     }
 
-    computeTextureMap(scene: BABYLON.Scene) {
-        // first, get the mean and stddev of the normals
+    computeTextureMap1(scene: BABYLON.Scene) {
+        // first, compute average normal of surface
+        let { varmag, angle, meanpos } = this.computeNormalMeanStddev();
     }
 
     computeTextureMap2(scene: BABYLON.Scene) {
@@ -296,7 +301,7 @@ export class Chunk {
                     let px = x1 * u + x2 * v + x3 * w;
                     let py = y1 * u + y2 * v + y3 * w;
                     let pz = z1 * u + z2 * v + z3 * w;
-                    let density = this.computeExactNormals(new BABYLON.Vector3(px, py, pz));
+                    let density = this.computeExactNormals(new BABYLON.Vector3(px, py, pz), 0.5);
                 }
             }
         }
@@ -365,7 +370,7 @@ export class Chunk {
                         this.vertices.push(vertPos.z);
                         //this.computeSmoothNormals(x, y, z);
                         //this.computeCubeNormals(cube);
-                        this.computeExactNormals(vertPos);
+                        this.computeExactNormals(vertPos, 0.5);
 
                         this.indices.push((this.vertices.length / 3) - 1);
                         //this.triangles.push(this.vertices.length - 1);

@@ -3,6 +3,9 @@ import { Chunk, WorldShape } from "./chunk";
 
 // https://www.kevs3d.co.uk/dev/shaders/
 // can we make a surface shader with a few iterations?
+// https://www.boristhebrave.com/2018/04/15/dual-contouring-tutorial/
+// https://github.com/Domenicobrz/Dual-Contouring-javascript-implementation
+
 
 const gridPointsPerEdge = 8;
 const maxDistance = 0.1;    
@@ -62,7 +65,6 @@ export class Octant {
         }
         // TODO? this.addLights(mesh);
         console.log("built octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
-        this.chunk.computeTextureMap(scene);
         if (Octant.shadowGenerator) {
             if (this.level <= 3) {
                 Octant.shadowGenerator.addShadowCaster(mesh);
@@ -80,12 +82,6 @@ export class Octant {
             if (meta.varmag < maxLandingVariance && meta.angle < maxLandingAngle) {
                 await this.placeLight(scene, meta.meanpos);
             }
-        }
-        return true;
-    }
-    isFullySubdivided() {
-        for (let child of this.children) {
-            if (!child.subdivided) return false;
         }
         return true;
     }
