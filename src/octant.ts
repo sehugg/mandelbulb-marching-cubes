@@ -19,6 +19,7 @@ export class Octant {
 
     level: number;
     children: Octant[] = [];
+    subdivided = false;
     x: number;
     y: number;
     z: number;
@@ -48,6 +49,12 @@ export class Octant {
     }
     async build(scene: BABYLON.Scene) {
         console.log("building octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
+        if (this.level == 0) {
+            BABYLON.RenderingManager.MAX_RENDERINGGROUPS = maxLevel + 1;
+            for (let i=0; i<maxLevel+1; i++) {
+                scene.setRenderingAutoClearDepthStencil(i, false);
+            }
+        }
         this.chunk.create();
         let mesh = this.mesh = this.chunk.buildMesh(scene);
         if (!mesh) {
@@ -55,13 +62,16 @@ export class Octant {
         }
         // TODO? this.addLights(mesh);
         console.log("built octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
+        this.chunk.computeTextureMap(scene);
         if (Octant.shadowGenerator) {
             if (this.level <= 3) {
                 Octant.shadowGenerator.addShadowCaster(mesh);
             }
             mesh.receiveShadows = true;
         }
+        //mesh.isOccluded = true;
         mesh.occlusionType = BABYLON.AbstractMesh.OCCLUSION_TYPE_OPTIMISTIC;
+        //mesh.renderingGroupId = maxLevel + 1 - this.level;
         if (this.level < maxLevel) {
             this.setupLODDetection(scene, mesh);
         }
@@ -73,19 +83,25 @@ export class Octant {
         }
         return true;
     }
+    isFullySubdivided() {
+        for (let child of this.children) {
+            if (!child.subdivided) return false;
+        }
+        return true;
+    }
     setupLODDetection(scene: BABYLON.Scene, mesh: BABYLON.Mesh) {
         let mesh2 = mesh.clone(mesh.name + ' clone'); // for LOD detection
-        let subdivided = false;
+        let subdiv = false;
         mesh.useLODScreenCoverage = true;
         mesh.addLODLevel(maxDistance, mesh2);
         mesh.onLODLevelSelection = (distance, _mesh, level) => {
-            if (!subdivided && level == mesh) {
-                subdivided = true;
+            if (!subdiv && level == mesh) {
+                subdiv = true;
                 console.log("mesh LOD level selected", distance, level == this.mesh);
                 if (distance == Infinity) return;
                 this.subdivide(scene);
-            } else if (subdivided && level != mesh && distance < minDistance) {
-                subdivided = false;
+            } else if (subdiv && level != mesh && distance < minDistance) {
+                subdiv = false;
                 console.log("subdivided mesh LOD level selected", distance, level == this.mesh);
                 this.undivide(scene);
             }
@@ -148,6 +164,8 @@ export class Octant {
         return await child.build(scene);
     }
     async subdivide(scene: BABYLON.Scene) {
+        if (this.subdivided) return;
+        this.subdivided = true;
         if (this.children.length == 0) {
             console.log("subdividing octant at " + this.x + " " + this.y + " " + this.z);
             let empty = [];
@@ -174,6 +192,8 @@ export class Octant {
         }
     }
     async undivide(scene: BABYLON.Scene) {
+        if (!this.subdivided) return;
+        this.subdivided = false;
         // hide all children
         for (let child of this.children) {
             if (child.mesh) {

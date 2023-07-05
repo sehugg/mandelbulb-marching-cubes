@@ -18,6 +18,8 @@ const densityThreshold = -0.005;
 const smoothShaded = true;
 const smoothTerrain = false;
 
+const triangleEdgeLen = 3;
+
 //the chunk class
 export class Chunk {
     x;
@@ -28,7 +30,7 @@ export class Chunk {
     cellSize;
     cutOff;
     chunk: number[][][];
-    triangles: number[];
+    //triangles: number[];
     vertices: number[];
     indices: number[];
     normals: number[];
@@ -50,7 +52,7 @@ export class Chunk {
 
         this.chunk = [];
 
-        this.triangles = [];
+        //this.triangles = [];
         this.vertices = [];
         this.indices = [];
         this.normals = [];
@@ -93,12 +95,9 @@ export class Chunk {
             return null;
         }
         
-        var mat = new BABYLON.StandardMaterial("mat", scene);
-        mat.backFaceCulling = true;
-    
         let key = this.x + " " + this.y + " " + this.z + " " + this.chunkWidth;
         let mesh = new BABYLON.Mesh(key, scene);
-        mesh.material = mat;
+        if (mesh.material) mesh.material.backFaceCulling = true;
     
         var vertexData = new BABYLON.VertexData();
         vertexData.positions = this.vertices;
@@ -158,7 +157,7 @@ export class Chunk {
                 }
             }
         }
-        console.log('verts', this.vertices.length, 'edges', this.indices.length, 'tris', this.triangles.length);
+        console.log('verts', this.vertices.length, 'edges', this.indices.length);
     }
 
     //flat normals
@@ -268,6 +267,41 @@ export class Chunk {
         return { varmag, angle, meanpos };
     }
 
+    computeTextureMap(scene: BABYLON.Scene) {
+        // first, get the mean and stddev of the normals
+    }
+
+    computeTextureMap2(scene: BABYLON.Scene) {
+        let tricount = this.indices.length / 3;
+        let npixels = tricount * (triangleEdgeLen + 1);
+        // create texture2d
+        let texture = new BABYLON.DynamicTexture("texture", {width: npixels, height: triangleEdgeLen}, scene, false);
+        for (let i=0; i<this.indices.length; i+=3) {
+            let x1 = this.vertices[this.indices[i] * 3];
+            let y1 = this.vertices[this.indices[i] * 3 + 1];
+            let z1 = this.vertices[this.indices[i] * 3 + 2];
+            let x2 = this.vertices[this.indices[i+1] * 3];
+            let y2 = this.vertices[this.indices[i+1] * 3 + 1];
+            let z2 = this.vertices[this.indices[i+1] * 3 + 2];
+            let x3 = this.vertices[this.indices[i+2] * 3];
+            let y3 = this.vertices[this.indices[i+2] * 3 + 1];
+            let z3 = this.vertices[this.indices[i+2] * 3 + 2];
+            //console.log(x1, y1, z1, x2, y2, z2, x3, y3, z3);
+            for (let y=0; y<triangleEdgeLen; y++) {
+                for (let x=0; x<=y; x++) {
+                    // interpolate point and find density
+                    let u = x / triangleEdgeLen;
+                    let v = y / triangleEdgeLen;
+                    let w = 1 - u - v;
+                    let px = x1 * u + x2 * v + x3 * w;
+                    let py = y1 * u + y2 * v + y3 * w;
+                    let pz = z1 * u + z2 * v + z3 * w;
+                    let density = this.computeExactNormals(new BABYLON.Vector3(px, py, pz));
+                }
+            }
+        }
+    }
+
     //marches the cube
     marchCube(x: number, y: number, z: number, size: number, cube: number[], config: number) {
         //if the config is outside the 0 or 255 which are both -1 it should return
@@ -319,7 +353,7 @@ export class Chunk {
                     this.vertices.push(vertPos.y);
                     this.vertices.push(vertPos.z);
                     this.indices.push((this.vertices.length / 3) - 1);
-                    this.triangles.push(this.vertices.length - 1);
+                    //this.triangles.push(this.vertices.length - 1);
                 } else {
                     //smooth shaded
                     var key = vertPos.x + "" + vertPos.y + "" + vertPos.z;
@@ -334,11 +368,11 @@ export class Chunk {
                         this.computeExactNormals(vertPos);
 
                         this.indices.push((this.vertices.length / 3) - 1);
-                        this.triangles.push(this.vertices.length - 1);
+                        //this.triangles.push(this.vertices.length - 1);
                     } else {
                         var index = this.vertexChecker[key];
                         this.indices.push((index / 3) - 1);
-                        this.triangles.push(index - 1);
+                        //this.triangles.push(index - 1);
                     }
                 }
 

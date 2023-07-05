@@ -8,7 +8,7 @@ import { Chunk } from "./chunk";
 import { Mandelbulb } from "./mandel";
 import { Octant } from "./octant";
 
-var debug = false;
+var debug = true;
 
 var timeStep = 1 / 60; //TODO?
 
