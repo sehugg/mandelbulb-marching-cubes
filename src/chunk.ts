@@ -17,6 +17,7 @@ const densityThreshold = -0.005;
 
 const smoothShaded = true;
 const smoothTerrain = false;
+const computeNormals = false;
 
 const triangleEdgeLen = 3;
 
@@ -97,12 +98,11 @@ export class Chunk {
         
         let key = this.x + " " + this.y + " " + this.z + " " + this.chunkWidth;
         let mesh = new BABYLON.Mesh(key, scene);
-        if (mesh.material) mesh.material.backFaceCulling = true;
-    
+
         var vertexData = new BABYLON.VertexData();
         vertexData.positions = this.vertices;
         vertexData.indices = this.indices;
-        vertexData.normals = this.normals;
+        if (computeNormals) vertexData.normals = this.normals;
         vertexData.applyToMesh(mesh, true);
 
         //this just sets the mesh position to its right place        
@@ -368,9 +368,11 @@ export class Chunk {
                         this.vertices.push(vertPos.x);
                         this.vertices.push(vertPos.y);
                         this.vertices.push(vertPos.z);
-                        //this.computeSmoothNormals(x, y, z);
-                        //this.computeCubeNormals(cube);
-                        this.computeExactNormals(vertPos, 0.5);
+                        if (computeNormals) {
+                            //this.computeSmoothNormals(x, y, z);
+                            //this.computeCubeNormals(cube);
+                            this.computeExactNormals(vertPos, 0.5);
+                        }
 
                         this.indices.push((this.vertices.length / 3) - 1);
                         //this.triangles.push(this.vertices.length - 1);

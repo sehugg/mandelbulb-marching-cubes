@@ -7,8 +7,9 @@ import "@babylonjs/loaders";
 import { Chunk } from "./chunk";
 import { Mandelbulb } from "./mandel";
 import { Octant } from "./octant";
+import { MandelbulbPluginMaterial } from './shader';
 
-var debug = true;
+var debug = false;
 
 var timeStep = 1 / 60; //TODO?
 
@@ -43,7 +44,9 @@ export class Main {
         });
 
         // ... YOUR SCENE CREATION
-        if (debug) Inspector.Show(scene, {});
+        if (debug) {
+            Inspector.Show(scene, {});
+        }
 
         var camera = new BABYLON.ArcRotateCamera("arcCam", BABYLON.Tools.ToRadians(45), BABYLON.Tools.ToRadians(45), 200.0, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
@@ -85,6 +88,7 @@ export class Main {
         // build first octant
         (async () => {
             await rootOctant.build(scene);
+            console.log(BABYLON.ShaderStore);
         })();
     }
 

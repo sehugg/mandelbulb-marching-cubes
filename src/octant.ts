@@ -1,5 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { Chunk, WorldShape } from "./chunk";
+import { MandelbulbPluginMaterial } from "./shader";
 
 // https://www.kevs3d.co.uk/dev/shaders/
 // can we make a surface shader with a few iterations?
@@ -8,7 +9,7 @@ import { Chunk, WorldShape } from "./chunk";
 
 
 const gridPointsPerEdge = 8;
-const maxDistance = 0.1;    
+const maxDistance = 0.1;
 const minDistance = 0.02;
 const maxLevel = 7;
 const landingLevel = 6;
@@ -16,9 +17,11 @@ const minLandingVerts = 50;
 const maxLandingVariance = 0.2;
 const maxLandingAngle = 0.2;
 const lightSurfaceDistance = 10;
+const overlap = 0.1;
 
 export class Octant {
     static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
+    static material : BABYLON.StandardMaterial | null = null;
 
     level: number;
     children: Octant[] = [];
@@ -38,6 +41,7 @@ export class Octant {
         readonly radius: number)
     {
         const r = radius;
+        const r2 = r * (1 + overlap);
         if (parent) {
             this.x = parent.x + ((index & 1) ? r : -r);
             this.y = parent.y + ((index & 2) ? r : -r);
@@ -46,7 +50,7 @@ export class Octant {
         } else {
             this.x = this.y = this.z = this.level = 0;
         }
-        let chunkWidth = radius * 2;
+        let chunkWidth = r2 * 2;
         let resolution = chunkWidth / gridPointsPerEdge;
         this.chunk = new Chunk(this.x-radius, this.y-radius, this.z-radius, resolution, chunkWidth, world);
     }
@@ -63,6 +67,19 @@ export class Octant {
         if (!mesh) {
             return false;
         }
+        if (Octant.material == null) {
+            let mat = new BABYLON.StandardMaterial("mat", scene);
+            mat.backFaceCulling = true;
+            Octant.material = mat;
+            new MandelbulbPluginMaterial(mat);
+            let once = false;
+            mat.onBind = () => {
+                if (once) return;
+                once = true;
+                console.log(BABYLON.ShaderStore);
+            }
+        }
+        mesh.material = Octant.material;
         // TODO? this.addLights(mesh);
         console.log("built octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
         if (Octant.shadowGenerator) {
@@ -118,6 +135,7 @@ export class Octant {
         var b = 1 - r;
         let mat = new BABYLON.StandardMaterial("sphereMat", scene);
         mat.emissiveColor = new BABYLON.Color3(r, g, b);
+
         // get offset 
         let poffset = new BABYLON.Vector3(this.x, this.y, this.z).normalize();
         cenpos.addInPlace(poffset.scale(lightSurfaceDistance));

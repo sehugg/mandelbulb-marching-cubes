@@ -18,8 +18,8 @@ function mandelbulb(x: number, y: number, z: number, maxIterations: number) {
     var dr = 1.0;
     var r = 0.0;
     var power = 8.0;
-    power = y + 6;
-    power = Math.max(2, Math.min(10, power));
+    //power = y + 6;
+    //power = Math.max(2, Math.min(10, power));
     for (var i = 0; i < maxIterations; i++) {
         r = Math.sqrt(x * x + y * y + z * z);
         if (r > 2.0) break;
