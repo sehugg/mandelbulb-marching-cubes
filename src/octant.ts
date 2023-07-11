@@ -8,16 +8,17 @@ import { MandelbulbPluginMaterial } from "./shader";
 // https://github.com/Domenicobrz/Dual-Contouring-javascript-implementation
 
 
-const gridPointsPerEdge = 8;
+const gridPointsPerEdge = 16;
 const maxDistance = 0.1;
-const minDistance = 0.02;
-const maxLevel = 7;
+const minDistance = 0.05;
+const maxLevel = 6;
+const overlap = 0.125;
+
 const landingLevel = 6;
 const minLandingVerts = 50;
 const maxLandingVariance = 0.2;
 const maxLandingAngle = 0.2;
 const lightSurfaceDistance = 10;
-const overlap = 0.1;
 
 export class Octant {
     static shadowGenerator : BABYLON.CascadedShadowGenerator | null = null;
@@ -52,7 +53,7 @@ export class Octant {
         }
         let chunkWidth = r2 * 2;
         let resolution = chunkWidth / gridPointsPerEdge;
-        this.chunk = new Chunk(this.x-radius, this.y-radius, this.z-radius, resolution, chunkWidth, world);
+        this.chunk = new Chunk(this.x-r2, this.y-r2, this.z-r2, resolution, chunkWidth, world);
     }
     async build(scene: BABYLON.Scene) {
         console.log("building octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
@@ -83,9 +84,7 @@ export class Octant {
         // TODO? this.addLights(mesh);
         console.log("built octant at " + this.level + " " + this.x + " " + this.y + " " + this.z);
         if (Octant.shadowGenerator) {
-            if (this.level <= 3) {
-                Octant.shadowGenerator.addShadowCaster(mesh);
-            }
+            Octant.shadowGenerator.addShadowCaster(mesh);
             mesh.receiveShadows = true;
         }
         //mesh.isOccluded = true;

@@ -148,7 +148,7 @@ export class Chunk {
                         // if the value is greater than zero then there is mesh data contained in that cell
                         // so it transforms corners to binary data to get the mesh configuration
                         // which is basically just filling up remaining zeros
-                        if (cube[i] >= densityThreshold) {
+                        if (cube[i] >= thresh) {
                             config |= 1 << i;
                         }
                     }

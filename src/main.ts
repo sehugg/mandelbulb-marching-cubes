@@ -52,28 +52,35 @@ export class Main {
         camera.attachControl(canvas, true);
 
         var hemLight = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(-1, 1, -1), scene);
-        hemLight.intensity = 0.2;
-        hemLight.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
+        hemLight.intensity = 0.5;
+        hemLight.diffuse = new BABYLON.Color3(0.5, 0.4, 0.3);
         hemLight.groundColor = new BABYLON.Color3(0.2, 0.1, 0.05);
 
-        /*
-        var dirLight = new BABYLON.DirectionalLight("dir", new BABYLON.Vector3(1,-1,1), scene);
+        var dirLight = new BABYLON.DirectionalLight("dir", new BABYLON.Vector3(1, -1, 1), scene);
         dirLight.intensity = 0.5;
         dirLight.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
-        */
-        
-       /*
-        var dirLight1 = new BABYLON.DirectionalLight("dir1", new BABYLON.Vector3(1,1,1), scene);
-        dirLight1.intensity = 0.5;
-        dirLight1.diffuse = new BABYLON.Color3(0.2, 0.6, 1);
-        var dirLight2 = new BABYLON.DirectionalLight("dir2", new BABYLON.Vector3(-1,-1,-1), scene);
-        dirLight2.intensity = 0.5;
-        dirLight2.diffuse = new BABYLON.Color3(1, 0.2, 0.6);
-        */
+
+        /*
+         var dirLight1 = new BABYLON.DirectionalLight("dir1", new BABYLON.Vector3(1,1,1), scene);
+         dirLight1.intensity = 0.5;
+         dirLight1.diffuse = new BABYLON.Color3(0.2, 0.6, 1);
+         var dirLight2 = new BABYLON.DirectionalLight("dir2", new BABYLON.Vector3(-1,-1,-1), scene);
+         dirLight2.intensity = 0.5;
+         dirLight2.diffuse = new BABYLON.Color3(1, 0.2, 0.6);
+         */
 
         //just for a better look
-        //var shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
+        // https://playground.babylonjs.com/#FH3FM2#83
+        var shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
+        shadowGenerator.bias = 0.001;
+        shadowGenerator.normalBias = 0.02;
+        dirLight.shadowMaxZ = 100;
+        dirLight.shadowMinZ = 10;
+        shadowGenerator.useContactHardeningShadow = true;
+        shadowGenerator.contactHardeningLightSizeUVRatio = 0.05;
+        shadowGenerator.setDarkness(0.5);
         //Octant.shadowGenerator = shadowGenerator;
+
 
         var pipeline = new BABYLON.DefaultRenderingPipeline("default", false, scene, [camera]);
         pipeline.bloomEnabled = true;
@@ -81,6 +88,22 @@ export class Main {
         pipeline.bloomWeight = 2.0;
         pipeline.bloomKernel = 64;
         pipeline.bloomScale = 0.5;
+
+        /*        
+        // Create SSAO and configure all properties (for the example)
+        var ssaoRatio = {
+            ssaoRatio: 0.5, // Ratio of the SSAO post-process, in a lower resolution
+            combineRatio: 1.0 // Ratio of the combine post-process (combines the SSAO and the scene)
+        };
+        var ssao = new BABYLON.SSAORenderingPipeline("ssao", scene, ssaoRatio, [camera]);
+        ssao.fallOff = 0.000001;
+        ssao.area = 1;
+        ssao.radius = 0.0001;
+        ssao.totalStrength = 1.0;
+        ssao.base = 0.5;
+        scene.postProcessRenderPipelineManager.attachCamerasToRenderPipeline("ssao", camera);
+        scene.postProcessRenderPipelineManager.disableEffectInPipeline("ssaopipeline", ssao.SSAOCombineRenderEffect, camera);
+        */
 
         var world = new Mandelbulb();
 

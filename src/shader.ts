@@ -41,6 +41,10 @@ float mandelbulb_distance_estimator(vec3 position) {
 vec3 mandelbulb_normal_estimator(vec3 xyz) {
     // Compute the distance to the Mandelbulb
     float distance = mandelbulb_distance_estimator(xyz);
+
+    // Correct the position using the distance
+    xyz = xyz * (1.0 - distance);
+    distance = mandelbulb_distance_estimator(xyz);
     
     // Calculate the normal using central difference approximation
     float epsilon = 0.1;
