@@ -1,5 +1,5 @@
 {
-  "name": "webxr-template",
+  "name": "mandelbulb-shader-with-marching-cubes",
   "version": "0.0.2",
   "description": "",
   "main": "index.js",

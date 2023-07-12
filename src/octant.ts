@@ -8,9 +8,9 @@ import { MandelbulbPluginMaterial } from "./shader";
 // https://github.com/Domenicobrz/Dual-Contouring-javascript-implementation
 
 
-const gridPointsPerEdge = 16;
-const maxDistance = 0.1;
-const minDistance = 0.05;
+const gridPointsPerEdge = 12;
+const maxDistance = 0.2;
+const minDistance = 0.1;
 const maxLevel = 6;
 const overlap = 0.125;
 

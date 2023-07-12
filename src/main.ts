@@ -1,6 +1,6 @@
 
 
-import { Inspector } from '@babylonjs/inspector';
+//import { Inspector } from '@babylonjs/inspector';
 import * as BABYLON from "@babylonjs/core";
 // import STL loader
 import "@babylonjs/loaders";
@@ -45,7 +45,7 @@ export class Main {
 
         // ... YOUR SCENE CREATION
         if (debug) {
-            Inspector.Show(scene, {});
+            //Inspector.Show(scene, {});
         }
 
         var camera = new BABYLON.ArcRotateCamera("arcCam", BABYLON.Tools.ToRadians(45), BABYLON.Tools.ToRadians(45), 200.0, BABYLON.Vector3.Zero(), scene);
@@ -135,6 +135,16 @@ export class Main {
                     if (component.pressed) {
                         xrHelper.baseExperience.exitXRAsync();
                     }
+                });
+                const thumbstick = motionController.getAllComponentsOfType("thumbstick");
+                thumbstick[0]?.onAxisValueChangedObservable.add((component) => {
+                    // move the camera
+                    xrHelper.baseExperience.camera.position.addInPlace(new BABYLON.Vector3(component.x, 0, component.y));
+                });
+                thumbstick[1]?.onAxisValueChangedObservable.add((component) => {
+                    // rotate the camera
+                    xrHelper.baseExperience.camera.rotation.y += component.x * 0.1;
+                    xrHelper.baseExperience.camera.rotation.x += component.y * 0.1;
                 });
             });
         });
