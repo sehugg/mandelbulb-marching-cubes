@@ -13,7 +13,7 @@
   "dependencies": {
     "@babylonjs/core": "^6.10.0",
     "@babylonjs/materials": "^6.10.0",
-    "esbuild": "^0.18.10",
+    "esbuild": "^0.25.0",
     "typescript": "^5.1.6"
   },
   "devDependencies": {
